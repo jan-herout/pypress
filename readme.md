@@ -1,4 +1,4 @@
-# pypress
+# genpypress
 
 This library contains several code generator helpers. It is connected to the `press` code generator.
 
@@ -6,7 +6,7 @@ This library contains several code generator helpers. It is connected to the `pr
 
 ```python
 from pathlib import Path
-from pypress import mapping
+from genpypress import mapping
 
 # import a file in markdown format
 file = Path("TGT_ACCS_METH_RLTD_906_900_915_AMR_NIC_PCR_2_M2C.md", encoding="utf-8")
