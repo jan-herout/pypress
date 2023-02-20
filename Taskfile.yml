@@ -1,0 +1,28 @@
+# https://taskfile.dev
+
+# following external tools are used by the implementation:
+# STRINGER - generates Stringer interface; go get golang.org/x/tools/cmd/stringer
+# TASK     - https://taskfile.dev
+# PACKR    - https://github.com/gobuffalo/packr
+#               go install github.com/gobuffalo/packr/packr@latest
+# MODD     - https://github.com/cortesi/modd - actually not used by build, but useful tool 
+
+# run this ideally via task -w to monitor source for changes and compile as you go
+
+version: '3'
+
+tasks:
+    install:
+        cmds:
+            - poetry install
+    
+    test:
+        cmds:
+            - poetry run pytest
+            
+            
+    check:
+        cmds:
+            - poetry run isort 
+            - poetry run black
+            - poetry run flake8
