@@ -1,10 +1,33 @@
 [tool.poetry]
 name = "genpypress"
-version = "0.1.0"
+version = "0.1.5"
 description = "Set of tools and utilities connected with press code generator."
 authors = ["Jan Herout <jan.herout@gmail.com>"]
 license = "MIT"
+
+# -----------------------------------
+# readme
+# -----------------------------------
 readme = "README.md"
+
+# -----------------------------------
+# https://pypi.org/classifiers/
+# -----------------------------------
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Database",
+    "Intended Audience :: Developers",
+]
+
+
+# scripts
+# [tool.poetry.scripts]
+# my_package_cli = 'my_package.console:run'
+
+
 
 
 [tool.poetry.dependencies]

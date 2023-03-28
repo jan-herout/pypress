@@ -3,7 +3,7 @@ import sys
 import json
 import cattrs
 
-_lib_dir = pathlib.Path(__file__).parent.parent
+_lib_dir = pathlib.Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(_lib_dir))
 from genpypress import mapping
 
@@ -66,7 +66,10 @@ def test_full():
     TO2_PDM_EDW.ETL_Loaded_From = C:\BI_DOMAIN\DEVELOPMENT\RFC_31325_CIS_100900_SOC\20_DEV\20_MAPPING\L30_EDW_LOAD_033_NA_DRCTN\TD_FULL_EP_TGT_033_NA_DRCTN_JD.XLS
     TO2_PDM_EDW.ETL_Facet = L30_EDW_LOAD_033_NA_DRCTN
     ```
-
+    
+    ```sql
+    select * from test
+    ```
 
     ## RMS
 
@@ -161,9 +164,10 @@ def test_full():
     **na_drctn_id**
     ```
     [ column = na_drctn_id ]
+    # datový typ, storno
     comment = None
     mapped_to = BSCS_ZONE_DEST_PNTS_MPUZPTAB.ZPCODE
-    TO2_PDM_EDW.ETL_Transformation_Rules = BSCS_ZONE_DEST_PNTS_MPUZPTAB.ZPCODE => SK_NA_DRCTN.na_drctn_id
+    TO2_PDM_EDW.ETL_Transformation_Rule = BSCS_ZONE_DEST_PNTS_MPUZPTAB.ZPCODE => SK_NA_DRCTN.na_drctn_id
     ```
 
     **accs_meth_na_drctn_role_id**
@@ -188,6 +192,12 @@ def test_full():
     comment = None
     mapped_to = None
     TO2_PDM_EDW.ETL_Transformation_Rules = 110001310
+    ```
+
+    # Parse errors
+    
+    ```
+    stop here
     ```
 
     

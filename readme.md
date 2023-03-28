@@ -2,7 +2,11 @@
 
 This library contains several code generator helpers. It is connected to the `press` code generator.
 
+This package will only run on Windows (submodule `table` uses external binary as dependency, the binary only exists for Windows).
+
 ## Usage
+
+### Markdown (mapping) parser
 
 ```python
 from pathlib import Path
@@ -23,4 +27,22 @@ try:
     print(map["not available"])
 except KeyError as err:
     print(f"error: {err}")
+```
+
+### Table parser
+
+```
+from genpypress import table
+filename = "ddl_script.sql"
+data = table.from_file(filename)
+t = data[0]
+
+# access to table properties and/or columns
+print("table name", t.name)
+print("first column", t[0])
+print("column by name", t["column_name"])
+
+# deletion of columns by name and/or index
+del t["another_column"]
+del t[O]
 ```
