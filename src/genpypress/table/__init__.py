@@ -71,7 +71,9 @@ class Table:
         raise KeyError(f"{key}: not found in {self.name}")
 
     def __setitem__(self, key, val) -> None:
-        assert isinstance(val, Column), f"expected a column instance, got {val.__class__.__name__}"
+        assert isinstance(
+            val, Column
+        ), f"expected a column instance, got {val.__class__.__name__}"
         if isinstance(key, int):
             self.columns.insert(key, val)
             return
@@ -111,7 +113,9 @@ class Table:
             del self.columns[name_or_index]
             return
 
-        raise ValueError(f"expected to get one of int, str, Columns, got: {name_or_index.__class__.__name__}")
+        raise ValueError(
+            f"expected to get one of int, str, Columns, got: {name_or_index.__class__.__name__}"
+        )
 
     def __len__(self) -> int:
         return len(self.columns)
@@ -125,7 +129,9 @@ class Table:
             colname = item.name
         elif isinstance(item, str):
             colname = item
-        assert colname, f"expected to get one of str, Column, got: {item.__class__.__name__}"
+        assert (
+            colname
+        ), f"expected to get one of str, Column, got: {item.__class__.__name__}"
         for c in self.columns:
             if c.name.casefold() == colname.casefold():
                 return True
@@ -152,7 +158,9 @@ def from_file(filename: str | Path, timeout_seconds=2) -> list[Table] | Table:
     """
     if isinstance(filename, str):
         filename = Path(filename)
-    assert isinstance(filename, Path), f"filename: not a path: {filename.__class__.__name__}"
+    assert isinstance(
+        filename, Path
+    ), f"filename: not a path: {filename.__class__.__name__}"
     filename = filename.resolve()
     assert filename.is_file(), f"filename: does not exist {filename}"
 
@@ -161,13 +169,17 @@ def from_file(filename: str | Path, timeout_seconds=2) -> list[Table] | Table:
     # check_output raises CalledProcessError on non-zero exit status as specified in the question's text unlike proc.communicate() method.
     #
     try:
-        output_bytes = subprocess.check_output(jsonizer, stderr=subprocess.STDOUT, timeout=timeout_seconds)
+        output_bytes = subprocess.check_output(
+            jsonizer, stderr=subprocess.STDOUT, timeout=timeout_seconds
+        )
     except subprocess.TimeoutExpired:
         raise subprocess.TimeoutExpired(
             f"timeout: {_table2json.name} did not finish in under {timeout_seconds} seconds: check the file {filename}"
         )
     except subprocess.CalledProcessError:
-        raise subprocess.CalledProcessError(f"error: {_table2json.name} returned error, check the file {filename}")
+        raise subprocess.CalledProcessError(
+            f"error: {_table2json.name} returned error, check the file {filename}"
+        )
 
     # get the json
     output_string = output_bytes.decode("utf-8")

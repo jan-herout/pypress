@@ -37,7 +37,9 @@ def test_from_file():
     del t["llp_ico"]
     del t[0]  # account_id
     assert t[0].name == "PrimaryGarant"  # třetí sloupec
-    assert len(t.pi_columns) == 0  # smazali jsme account_id, které je na primárním indexu => nemáme primární index
+    assert (
+        len(t.pi_columns) == 0
+    )  # smazali jsme account_id, které je na primárním indexu => nemáme primární index
 
 
 def test_from_file_dies():

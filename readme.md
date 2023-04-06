@@ -6,6 +6,12 @@ This package will only run on Windows (submodule `table` uses external binary as
 
 ## Usage
 
+### Command line application
+
+- `ph --help` - zobrazí nápovědu
+- `ph apatch` - provede patch TPT skriptů pro asynchronní stage
+- `ph cc` - připraví SQL a/nebo BTEQ skripty tabulek na podmíněné nasazení
+
 ### Markdown (mapping) parser
 
 ```python

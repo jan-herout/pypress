@@ -28,11 +28,11 @@ class Mapping:
     table: str
     name: str
 
-    mapped_to: list[str] = field(default=list())
+    mapped_to: list[str] = field(factory=list)
     comment: Optional[str] = field(default=None)
 
     etl_historization: Optional[str] = field(default=None)
-    etl_matching_rules: list[str] = field(default=list())
+    etl_matching_rules: list[str] = field(factory=list)
     etl_main_source: Optional[str] = field(default=None)
     etl_referenced_sources: Optional[str] = field(default=None)
     etl_filter_criterion: Optional[str] = field(default=None)
@@ -43,10 +43,10 @@ class Mapping:
     etl_before_insert: Optional[str] = field(default=None)
     etl_after_insert: Optional[str] = field(default=None)
 
-    column_mappings: list[ColumnMapping] = field(default=list())
-    attached_rules: list[str] = field(default=list())
-    etl_prep_steps: list[str] = field(default=list())
-    etl_post_steps: list[str] = field(default=list())
+    column_mappings: list[ColumnMapping] = field(factory=list)
+    attached_rules: list[str] = field(default=list)
+    etl_prep_steps: list[str] = field(factory=list)
+    etl_post_steps: list[str] = field(factory=list)
 
     def __getitem__(self, key):
         col_name = key.lower()
@@ -116,7 +116,7 @@ def _is_key_val_property(line: str, throws_on_fail=False) -> Optional[KeyAndVal]
         position = line.index("=")
     except ValueError:
         if throws_on_fail:
-            raise ParsingError(f"input line is not a key value property: {line}; parts={parts}")
+            raise ParsingError(f"input line is not a key value property: {line}")
         return None
 
     k = line[:position].upper().strip()

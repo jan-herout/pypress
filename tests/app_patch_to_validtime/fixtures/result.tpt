@@ -1,0 +1,74 @@
+ /*
+ ---------------------------------------------------------------------------------------------------------------------------------
+ --      TEMPLATE RELATED INFORMATION
+ ---------------------------------------------------------------------------------------------------------------------------------
+ --    Project:         EDW Consolidation
+ --    Description:     Data transformation
+ --
+ ---------------------------------------------------------------------------------------------------------------------------------
+ --    SCRIPT RELATED INFORMATION
+ ---------------------------------------------------------------------------------------------------------------------------------
+ --
+ --    Used objects
+ --    ------------------------------
+ --    Script name       : ep_tgt.il_transformation.transform_tgt_syst_proc_rmca_zzsyst_desc.tpt 
+ --    Target table      : EP_TGT.SYST_PROC
+ --    Working table     : %EP_TGT_WRK_DB%.SYST_PROC_110_000_110001062_W
+ --    Generated from:  c:\BI_Domain\Development\RFC_31325_CIS_100900_SOC\20_DEV\30_IMPACT\EP_TGT.pdm
+ --    Mapping from:    C:\BI_DOMAIN\DEVELOPMENT\RFC_31325_CIS_100900_SOC\20_DEV\20_MAPPING\L30_EDW_LOAD_080_BILLING_AND_INVOICE\TD_FULL_EP_TGT_RMCA_GL_ENTRY_MKO.XLS
+ ---------------------------------------------------------------------------------------------------------------------------------
+ */
+ 
+ USING CHARACTER SET UTF16
+ 
+ DEFINE JOB "Tran_SYST_PROC"
+    (
+    STEP STEP_TRAN_JOB_SYST_PROC
+       (
+       APPLY
+          SET SESSION VALIDTIME AS OF TIMESTAMP ''%LOAD_DT% 23:59:59'';'
+          ,
+          
+          'DELETE FROM "%EP_TGT_WRK_DB%"."SYST_PROC_110_000_110001062_W";'
+         ,
+          'INSERT INTO "%EP_TGT_WRK_DB%"."SYST_PROC_110_000_110001062_W"
+          SELECT * FROM (
+ SELECT
+ COALESCE (SK_SYST_PROC.syst_proc_id,-1) (SMALLINT)  AS syst_proc_id
+  ,RMCA_ZZSYST_DESC.zzsyst (VARCHAR(100))  AS syst_proc_cd
+  ,RMCA_ZZSYST_DESC.zzsyst_desc (VARCHAR(250))  AS syst_proc_nm
+  ,NULL (VARCHAR(1500))  AS syst_proc_desc
+  ,6202 (SMALLINT)  AS src_cls_id
+  ,RMCA_ZZSYST_DESC.load_id  (INTEGER)  AS load_id
+  ,CAST(''%LOAD_DTTM%'' AS TIMESTAMP(0) FORMAT ''YYYY-MM-DDBHH:MI:SS'')  (TIMESTAMP(0))  AS load_dttm
+  ,110001062 (INTEGER)  AS map_id
+  ,100000440 (INTEGER)  AS hist_type
+ FROM %EP_STG_V_LOAD_DB%.RMCA_ZZSYST_DESC RMCA_ZZSYST_DESC
+ INNER JOIN %EP_TGT_V_LOAD_DB%.SK_SYST_PROC as SK_SYST_PROC
+ ON SK_SYST_PROC.src_cd = trim(RMCA_ZZSYST_DESC.zzsyst)
+ AND SK_SYST_PROC.key_dom_id = 341
+ 
+ 
+ 
+ WHERE
+ RMCA_ZZSYST_DESC.upd_dttm = CAST(''%LOAD_DTTM%'' AS TIMESTAMP(0) FORMAT ''YYYY-MM-DDBHH:MI:SS'')
+ 
+          ) as T
+;'
+                       
+       TO OPERATOR
+          (
+          $DDL
+       
+          ATTRIBUTES
+             (
+              "TdpId"        = '%TGT_TDPID%'
+             ,"UserName"     = '%TGT_USER%' 
+             ,"UserPassword" = '%TGT_PASSWORD%'
+             , "RestartAtFirstDMLGroup" = 'Yes'
+             ,"LogSQL"       = 'Yes'
+             ,"QueryBandSessInfo" = ['OBJ=TGT_SYST_PROC_RMCA_ZZSYST_DESC;STP=IL_TRANSFORMATION;USR=%TGT_USER%;DB=%EP_TGT_DB%;TBL=SYST_PROC;OPR=INSERT;MID=110001062 FOR SESSION;']
+             )
+           );           
+       );
+   );
