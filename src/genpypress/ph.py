@@ -1,7 +1,10 @@
 from pathlib import Path as _Path
 import fire as _fire
+from rich import traceback
 from genpypress import app_cc as _app_cc
 from genpypress import app_patch_to_validtime as _app_patch_to_validtime
+
+traceback.install(show_locals=False, max_frames=1)
 
 
 def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
@@ -13,7 +16,9 @@ def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
         encoding (str): jak jsou soubory nakódované
     """
     d = _Path(directory)
-    assert d.is_dir(), f"toto není adresdář: {directory}"
+    if not d.is_dir():
+        print(f"toto není adresář: {directory}")
+        exit(1)
     _app_patch_to_validtime.async_patch(d, limit, encoding)
 
 
@@ -32,9 +37,7 @@ def cc(
         input_encoding (str): Defaults to "utf-8".
         output_encoding (str): Defaults to "utf-8".
     """
-    _app_cc.conditional_create(
-        directory, scenario, input_encoding, output_encoding, max_files
-    )
+    _app_cc.conditional_create(directory, scenario, input_encoding, output_encoding, max_files)
 
 
 def _main():

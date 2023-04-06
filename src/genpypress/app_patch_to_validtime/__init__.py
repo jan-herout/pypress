@@ -18,10 +18,11 @@ def async_patch(directory: Path, limit: int = 50, encoding: str = "utf-8"):
     # sestav seznam souborů
     files = list(directory.rglob("*.tpt"))
     if len(files) == 0:
-        raise PatchError(f"Nula souborů na vstupu: {directory=}")
+        raise PatchError(f"Nula souborů na vstupu: directory={str(directory)}")
     if len(files) > limit:
         raise PatchError(
-            f"Více souborů než jsme čekali. {directory=}, {limit=}, {len(files)=}"
+            f"Více souborů než jsme čekali.\n- {limit=}\n- {len(files)=}\n- directory={str(directory)}"
+            + "\n\nPoužij parametr --limit, pokud chceš limit zvednout."
         )
 
     # projdi soubor za souborem, seber si informaci o tom kde jsme měli úspěch a kde problém
@@ -77,12 +78,21 @@ def _patch_text(text: str):
     # jinak musíme provést patch
     out_lines = lines.copy()
 
+    # pokud je na řádku s APPLY apostrof, musíme ho "zasmrtit", ale současně ho musíme dodat za SET SESSION VALIDTIME
+    i_apply_apostrof = ""
+    if "'" in out_lines[i_apply]:
+        if out_lines[i_apply].count("'") > 1:
+            raise PatchError(f"na řádce s APPLY je víc apostrofů než jeden: {out_lines[i_apply]}")
+        i_apply_apostrof = "\n          '\n"
+        out_lines[i_apply] = out_lines[i_apply].replace("'", "")
+
     # řádek, kde je APPLY, obohatíme o SET SESSION VALIDTIME
     # to musíme udělat vždy - set session ve skriptu není (jinak bychom ho vrátili bez úprav)
     out_lines[i_apply] = (
         out_lines[i_apply]
-        + "\n          SET SESSION VALIDTIME AS OF TIMESTAMP ''%LOAD_DT% 23:59:59'';'"
+        + "\n          'SET SESSION VALIDTIME AS OF TIMESTAMP ''%LOAD_DT% 23:59:59'';'"
         + "\n          ,"
+        + i_apply_apostrof
     )
 
     # řádek, kde je insert, musíme zabalit do SELECT * FROM (
@@ -99,14 +109,8 @@ def _patch_text(text: str):
     # pokud ještě nemáme  RestartAtFirstDmlGFroup, doplnit
     if io_restart_prm == -1:
         if io_password == -1:
-            raise PatchError(
-                """nenašel jsem řádek, kde je "UserPassword" parametr na úrovni TO OPERATOR"""
-            )
-        out_lines[io_password] = (
-            out_lines[io_password]
-            + "\n             "
-            + """, "RestartAtFirstDMLGroup" = 'Yes'"""
-        )
+            raise PatchError("""nenašel jsem řádek, kde je "UserPassword" parametr na úrovni TO OPERATOR""")
+        out_lines[io_password] = out_lines[io_password] + "\n             " + """, "RestartAtFirstDMLGroup" = 'Yes'"""
 
     # doplň prázdný řádek, pokud na konci není
     if len(out_lines[-1]) > 0:
@@ -124,7 +128,6 @@ def tpt_is_first_select_star(in_lines: list[str]) -> bool:
             if line.startswith("SELECT*FROM"):
                 return True
             return False
-        print(f"{line=}")
     raise PatchError("failed to get the select")
 
 
@@ -132,8 +135,7 @@ def tpt_line_with_apply(in_lines: list[str]) -> int:
     """vrací pozice řádek, kde je APPLY"""
     lines = []
     for i, line in enumerate(in_lines):
-        line = line.strip().upper()
-        if line == "APPLY":
+        if line.strip("' ").upper() == "APPLY":
             lines.append(i)
 
     if len(lines) == 0:
@@ -173,9 +175,7 @@ def tpt_line_with_to_operator(in_lines: list[str]) -> int:
     return lines[0]
 
 
-def tpt_line_with_semicolon_above_operator(
-    in_lines: list[str], line_with_to_operator: int
-) -> LastStatementLine:
+def tpt_line_with_semicolon_above_operator(in_lines: list[str], line_with_to_operator: int) -> LastStatementLine:
     """
     funkce vrací tupple LastStatementLine
     - .line_no - číslo řádku, kde končí poslední statement nad TO OPERATOR
@@ -199,9 +199,7 @@ def tpt_line_with_semicolon_above_operator(
     if offset_apostrof == -1:
         offset_apostrof = in_lines[last_statement_line].rfind("'")
     if offset_apostrof == -1:
-        raise PatchError(
-            f"Na řádce {last_statement_line=} jsem nenašel ani středník ani apostrof"
-        )
+        raise PatchError(f"Na řádce {last_statement_line=} jsem nenašel ani středník ani apostrof")
 
     return LastStatementLine(line_no=last_statement_line, offset=offset_apostrof)
 
