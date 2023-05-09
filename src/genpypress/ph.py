@@ -3,8 +3,26 @@ import fire as _fire
 from rich import traceback
 from genpypress import app_cc as _app_cc
 from genpypress import app_patch_to_validtime as _app_patch_to_validtime
+from genpypress import app_join as _app_join
 
 traceback.install(show_locals=False, max_frames=1)
+
+_cwd = str(_Path.cwd())
+
+
+def join(
+    directory: str,
+    join_to: str = "part_1.sql",
+    delete: bool = True,
+    mask: str = "*.sql",
+    encoding: str = "utf-8",
+    add_comment: bool = True,
+):
+    """sloučí sadu SQL souborů do jednoho, a smaže je"""
+    _app_join.join_files(
+        directory=directory, join_to=join_to, delete=delete, mask=mask, encoding=encoding, add_comment=add_comment
+    )
+    print("done")
 
 
 def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):

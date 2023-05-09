@@ -37,6 +37,8 @@ except KeyError as err:
 
 ### Table parser
 
+Only supported on MS Windows.
+
 ```
 from genpypress import table
 filename = "ddl_script.sql"
