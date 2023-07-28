@@ -1,8 +1,9 @@
 from collections import namedtuple
 from pathlib import Path
-
+import re
 
 LastStatementLine = namedtuple("LastStatementLine", "line_no,offset")
+_UTF8 = "UTF-8"
 
 
 class PatchError(ValueError):
@@ -59,6 +60,11 @@ def async_patch(directory: Path, limit: int = 50, encoding: str = "utf-8"):
 
 def _patch_text(text: str):
     lines = text.split("\n")
+
+    # historicky jsme měli skripty označené jako nakódované v ANSI nebo v UTF-16, korekce na UTF-8
+    line_using_charset = tpt_line_with_using_character_set(lines)
+    if line_using_charset:
+        lines[line_using_charset.position] = line_using_charset.text
 
     # nejdříve si najdeme potřebné pozice - následující MUSÍM mít k dispozici vždy
     i_apply = tpt_line_with_apply(lines)
@@ -129,6 +135,38 @@ def tpt_is_first_select_star(in_lines: list[str]) -> bool:
                 return True
             return False
     raise PatchError("failed to get the select")
+
+
+def _list_contains_another(list1, list2):
+    """Returns True if list1 is contained in list2, False otherwise."""
+    for e1, e2 in zip(list1, list2):
+        if e1 != e2:
+            return False
+    return True
+
+
+LineWithEncoding = namedtuple("LineWithEncoding", "position,text")
+
+
+def tpt_line_with_using_character_set(in_lines: list[str]) -> LineWithEncoding | None:
+    """vrací čádek kde je characterset, a normalizuje ho na utf-8"""
+    line_no = -1
+    counter = 0
+    for line in in_lines:
+        line = line.strip(" ").upper()
+        elements = re.split(r"\s+", line)
+        if _list_contains_another(elements, ["USING", "CHARACTER", "SET"]):
+            line_no = counter
+            break
+        counter = counter + 1
+
+    replacements_from = ["LATIN1250_1A0", "UTF16"]
+    if line_no > -1:
+        line = in_lines[line_no].upper()
+        for r in replacements_from:
+            line = line.replace(r, _UTF8)
+        return LineWithEncoding(position=line_no, text=line)
+    return None
 
 
 def tpt_line_with_apply(in_lines: list[str]) -> int:

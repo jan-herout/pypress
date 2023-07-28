@@ -85,3 +85,12 @@ def test_tpt_is_first_select_star():
 def test_tpt_is_first_select_star_negative():
     lines = ["sss", "select whatever FROM"]
     assert pt.tpt_is_first_select_star(lines) is False
+
+
+def test_tpt_line_with_using_character_set(fix_ok_tpt):
+    result = pt.tpt_line_with_using_character_set(fix_ok_tpt.split("\n"))
+    assert result
+    assert result.text == f" USING CHARACTER SET {pt._UTF8}"
+
+    result2 = pt.tpt_line_with_using_character_set(["nowhere", "to", "be", "seen"])
+    assert result2 is None

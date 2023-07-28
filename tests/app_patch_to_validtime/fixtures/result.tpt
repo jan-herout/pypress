@@ -19,14 +19,14 @@
  ---------------------------------------------------------------------------------------------------------------------------------
  */
  
- USING CHARACTER SET UTF16
+ USING CHARACTER SET UTF-8
  
  DEFINE JOB "Tran_SYST_PROC"
     (
     STEP STEP_TRAN_JOB_SYST_PROC
        (
        APPLY
-          SET SESSION VALIDTIME AS OF TIMESTAMP ''%LOAD_DT% 23:59:59'';'
+          'SET SESSION VALIDTIME AS OF TIMESTAMP ''%LOAD_DT% 23:59:59'';'
           ,
           
           'DELETE FROM "%EP_TGT_WRK_DB%"."SYST_PROC_110_000_110001062_W";'

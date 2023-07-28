@@ -44,7 +44,7 @@ class Mapping:
     etl_after_insert: Optional[str] = field(default=None)
 
     column_mappings: list[ColumnMapping] = field(factory=list)
-    attached_rules: list[str] = field(default=list)
+    attached_rules: list[str] = field(factory=list)
     etl_prep_steps: list[str] = field(factory=list)
     etl_post_steps: list[str] = field(factory=list)
 

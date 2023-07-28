@@ -161,3 +161,4 @@ cython_debug/
 
 # OTHER - project specific
 notebooks/
+poetry.lock

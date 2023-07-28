@@ -194,6 +194,10 @@ def test_full():
     TO2_PDM_EDW.ETL_Transformation_Rules = 110001310
     ```
 
+    ```
+    [ rule = test ]
+    ```
+
     # Parse errors
     
     ```
