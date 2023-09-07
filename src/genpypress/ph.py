@@ -1,13 +1,51 @@
+import subprocess
 from pathlib import Path as _Path
+
 import fire as _fire
 from rich import traceback
+
 from genpypress import app_cc as _app_cc
-from genpypress import app_patch_to_validtime as _app_patch_to_validtime
 from genpypress import app_join as _app_join
+from genpypress import app_patch_to_validtime as _app_patch_to_validtime
+from genpypress import app_rewrite as _app_rewrite
+from genpypress import app_to_async as _app_to_async
 
 traceback.install(show_locals=False, max_frames=1)
 
 _cwd = str(_Path.cwd())
+
+
+def rewrite(directory: str = ".", config_file_name: str = "rewrite.json", max_files=20, run_press=False):
+    """
+    Umožní přepis souborů na základě konfigurace (rewrite.json).
+    Pokud ještě konfigurační soubor neexistuje, založí ho.
+
+    Args:
+        directory (str): _description_
+    """
+    directory = _Path(directory)
+    print(f"rewrite in: {directory=}")
+    config_file = directory / config_file_name
+    print(f"{config_file=}")
+    try:
+        config = _app_rewrite.read_config(config_file)
+    except _app_rewrite.exceptions.ConfigEmptyContent as err:
+        # OK, chybějící config file
+        print(err)
+        print(f"vytvářím vzorovový soubor: {config_file}")
+        _app_rewrite.create_sample_config(config_file)
+        return
+    except Exception:  # chyba o které nic nevím
+        raise
+
+    project_json = directory / "project.json"
+    if run_press and project_json.is_file():
+        print("press run")
+        subprocess.run(["press", "run"])
+
+    # proveď přepis
+    print("rewrite")
+    _app_rewrite.rewrite_in_dir(config, directory, max_files)
 
 
 def join(
@@ -56,6 +94,28 @@ def cc(
         output_encoding (str): Defaults to "utf-8".
     """
     _app_cc.conditional_create(directory, scenario, input_encoding, output_encoding, max_files)
+
+
+def ddl_to_async(
+    folder: str,
+    max_files: int = 20,
+    encoding: str = "utf-8",
+    default_type: str | None = None,
+):
+    """ddl_to_async: change DDL scripts to async stage implementaton
+
+    Args:
+        folder (str): the directory containing DDL scripts (MUST be *_LND or *_STG)
+        max_files (int, optional): defaults to 20.
+        encoding (str, optional): defaults to "utf-8".
+        default_type (str, optional): if set, apply (s) or (i) to STG tables
+    """
+    _app_to_async.to_async(
+        folder=folder,
+        max_files=max_files,
+        encoding=encoding,
+        default_type=default_type,
+    )
 
 
 def _main():

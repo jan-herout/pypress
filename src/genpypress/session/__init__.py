@@ -1,6 +1,7 @@
+import contextlib
 import os
 import sys
-import contextlib
+
 import teradatasql
 
 # od verze 3.9 je k dispozici collections.abc.Generator, ve starších verzích typing.Generator
@@ -22,10 +23,8 @@ def _one_of(keys: list[str], default=None) -> str | None:
 
 
 DEFAULT_HOSTNAME = _one_of(["TERADATA_HOSTNAME"], default="edwprod.cz.o2")
-DEFAULT_USER = _one_of(["TERADATA_USER", "TO2_DOMAIN_USER"], default="edwprod.cz.o2")
-DEFAULT_PASSWORD = _one_of(
-    ["TERADATA_PASSWORD", "TO2_DOMAIN_PASSWORD"], default="edwprod.cz.o2"
-)
+DEFAULT_USER = _one_of(["TERADATA_USER", "TO2_DOMAIN_USER"], default=None)
+DEFAULT_PASSWORD = _one_of(["TERADATA_PASSWORD", "TO2_DOMAIN_PASSWORD"], default=None)
 
 
 class ParameterError(ValueError):
@@ -58,10 +57,10 @@ def connect_teradata(
         any error supported by the teradatasql module
     """
     if username is None:
-        raise ParameterError("username: should not be None")
+        raise ParameterError(
+            "username: should not be None. You can set it as ENV variable: TERADATA_USER, TO2_DOMAIN_USER"
+        )
     if password is None:
         raise ParameterError("password: should not be None")
-    with teradatasql.connect(
-        host=hostname, user=username, password=password, logmech=logmech
-    ) as session:
+    with teradatasql.connect(host=hostname, user=username, password=password, logmech=logmech) as session:
         yield session

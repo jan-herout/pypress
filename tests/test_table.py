@@ -1,15 +1,16 @@
+import json
 import pathlib
 import sys
-import pytest
+
 import cattr
-import json
+import pytest
 
 _UPDATE_GOLDE_FILE_ = False
 
 _lib_dir = pathlib.Path(__file__).parent.parent / "src"
 _fixtures_dir = pathlib.Path(__file__).parent / "fixtures"
 sys.path.insert(0, str(_lib_dir))
-from genpypress import table
+from genpypress import table  # noqa: E402 - make flake8 happy
 
 
 def test_from_file():
@@ -37,9 +38,7 @@ def test_from_file():
     del t["llp_ico"]
     del t[0]  # account_id
     assert t[0].name == "PrimaryGarant"  # třetí sloupec
-    assert (
-        len(t.pi_columns) == 0
-    )  # smazali jsme account_id, které je na primárním indexu => nemáme primární index
+    assert len(t.pi_columns) == 0  # smazali jsme account_id, které je na primárním indexu => nemáme primární index
 
 
 def test_from_file_dies():

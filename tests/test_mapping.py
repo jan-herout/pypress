@@ -1,11 +1,9 @@
 import pathlib
 import sys
-import json
-import cattrs
 
 _lib_dir = pathlib.Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(_lib_dir))
-from genpypress import mapping
+from genpypress import mapping  # noqa: E402 - make flake8 happy
 
 
 def test_mapping():
@@ -214,7 +212,7 @@ def test_full():
     assert m["map_id"].transformation_rule == "110001310"
     throwed = False
     try:
-        x = m["neexistujici sloupec"]
+        _ = m["neexistujici sloupec"]
     except KeyError:
         throwed = True
     assert throwed
