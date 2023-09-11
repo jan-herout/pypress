@@ -176,5 +176,6 @@ def from_file(filename: str | Path, timeout_seconds=2) -> list[Table] | Table:
     # get the table
     tables_list = json.loads(output_string)
     tables = cattr.structure(tables_list, list[Table])
-
+    if len(tables) == 1:
+        return tables[0]
     return tables

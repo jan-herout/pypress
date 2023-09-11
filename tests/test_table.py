@@ -17,9 +17,9 @@ def test_from_file():
     fixture = _fixtures_dir / "test_from_file.sql"
     data = table.from_file(fixture)
     assert data
-    assert len(data) == 1
-    assert data[0].name == "SFA_GARANT_DN2"
-    assert len(data[0].columns) == 36
+    assert isinstance(data, table.Table) == 1
+    assert data.name == "SFA_GARANT_DN2"
+    assert len(data.columns) == 36
 
     golden_file = _fixtures_dir / "test_from_file.golden.json"
     if _UPDATE_GOLDE_FILE_:
@@ -30,7 +30,7 @@ def test_from_file():
         got = cattr.unstructure(data)
         assert got == golden_data
 
-    t = data[0]
+    t = data
     assert t["llp_ico"].name == "llp_ico"
     assert t[0].name == "llp_ico"
     t["llp_ico"].compress = "'whatever'"
