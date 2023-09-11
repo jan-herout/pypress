@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "genpypress"
-version = "0.1.19"
+version = "0.1.20"
 description = "Set of tools and utilities connected with press code generator."
 authors = ["Jan Herout <jan.herout@gmail.com>"]
 license = "MIT"
