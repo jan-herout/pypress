@@ -1,10 +1,65 @@
+import logging as _logging
 import os as _os
 import pathlib as _p
 from collections import namedtuple as _namedtuple
 from contextlib import contextmanager as _contextmanager
 
-import cx_Oracle as _ora
 import fire as _fire
+import oracledb as _ora
+
+_logger = _logging.getLogger()
+
+
+def _get_parent_directories(path: _p.Path) -> list[_p.Path]:
+    """Returns a list of all parent directories for a pathlib.Path object.
+
+    Args:
+        path: The pathlib.Path object.
+
+    Returns:
+        A list of all parent directories.
+    """
+    directories = []
+    current_path = path
+    while current_path != current_path.parent:
+        _logger.info(f"appending: {current_path}")
+        directories.append(current_path)
+        current_path = current_path.parent
+
+    return directories
+
+
+def _locate_client() -> _p.Path | None:
+    dirs_to_try: list[_p.Path] = []
+    files_to_try = ["oci.dll", "sqlplus.exe", "oci.msg", "libocci.so.12.2"]
+    try:
+        dirs_to_try.extend(_get_parent_directories(_p.Path(_os.environ["TNS_ADMIN"])))
+    except KeyError:
+        pass
+
+    try:
+        for pth in _os.environ["PATH"].split(";"):
+            dirs_to_try.append(_p.Path(pth))
+    except KeyError:
+        pass
+
+    for pth in dirs_to_try:
+        _logger.info(str(pth))
+        for file in files_to_try:
+            if (pth / file).is_file():
+                return pth
+
+    _logger.warning("failed to switch to thick client")
+    _logger.warning(
+        "see https://python-oracledb.readthedocs.io/en/latest/user_guide/initialization.html#enablingthick for mode details"
+    )
+    return None
+
+
+def _switch_to_thick_client():
+    client_dir = _locate_client()
+    if client_dir:
+        _ora.init_oracle_client(lib_dir=str(client_dir))
 
 
 def _one_of(keys: list[str], default=None) -> str | None:
@@ -193,7 +248,10 @@ def delay(
         c.cursor.execute(sql, delay=delay)
 
 
+# c:\apps\oracle\instantclient_19_10\admin\
 def _main():
+    _logging.basicConfig(level=_logging.INFO)
+    _switch_to_thick_client()
     _fire.Fire()
 
 
