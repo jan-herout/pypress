@@ -303,7 +303,7 @@ def _as_stg(
         out_lines.append(line)
 
     # pokud jde o stavovou tabulku, označ sloupce primárního indexu za primární klíč
-    if _typ == "i" and pk_cols:
+    if _typ == "s" and pk_cols:
         out_lines.append("")
         for col in pk_cols:
             out_lines.append(f"--+ +column.{col}.primary = true")
@@ -324,12 +324,14 @@ def _get_list_of_columns(line: str) -> list[str] | None:
     before, sep, after = after.partition(")")
     if sep == "":
         return empty
-    columns = [c.strip() for c in before.split(", ")]
+    columns = [c.strip() for c in before.split(",")]
     return columns
 
 
 def _is_primary_index(stripped_line: str) -> bool:
-    return stripped_line.startswith("primary index") or stripped_line.startswith("unique primary index")
+    return stripped_line.startswith("primary index") or stripped_line.startswith(
+        "unique primary index"
+    )
 
 
 def _is_stg_tech_column(stripped_line: str) -> bool:
@@ -349,7 +351,9 @@ def _is_lnd_tech_column(stripped_line: str) -> bool:
 
 
 def _remove_database(line: str, *, stripped_line: str, database: str):
-    if not (stripped_line.startswith("create ") or stripped_line.startswith("comment ")):
+    if not (
+        stripped_line.startswith("create ") or stripped_line.startswith("comment ")
+    ):
         return line
     return line.replace(f"{database}.", "").replace(" SET TABLE", " MULTISET TABLE")
 
@@ -381,14 +385,18 @@ def file_to_async(
     # read the file and get new content
     content = f.read_text(encoding=encoding)
     func = CALLBACKS[LAYERS[ph]]
-    new_content = func(content, file_name=f"{f.parent.name}/{f.name}", default_type=default_type)
+    new_content = func(
+        content, file_name=f"{f.parent.name}/{f.name}", default_type=default_type
+    )
     if new_content != content:
         print("...write")
         f.write_text(new_content, encoding=encoding)
 
 
 if __name__ == "__main__":
-    for line in ["COMMENT ON COLUMN OCS_BALANCE_EXPIRY_BAL.hash_val IS 'Audit column - MD5 hash for this record';"]:
+    for line in [
+        "COMMENT ON COLUMN OCS_BALANCE_EXPIRY_BAL.hash_val IS 'Audit column - MD5 hash for this record';"
+    ]:
         stripped_line = line.strip().lower()
         if stripped_line.startswith("comment on column"):
             for c in _OLD_STG_TECH_COLS:

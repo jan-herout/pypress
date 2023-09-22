@@ -61,8 +61,8 @@ def test_as_stg(stg_table: str):
     def _typ_s(*args, **kwargs):
         return "s"
 
-    result1 = pt._as_stg(stg_table, prompt_func=_typ_s)
-    result = pt._as_stg(result1, prompt_func=_typ_s)
+    result1 = pt._as_stg(stg_table, prompt_func=_typ_s, default_type="s")
+    result = pt._as_stg(result1, prompt_func=_typ_s, default_type="s")
     assert isinstance(result, str)
     assert result == result1
 
@@ -86,3 +86,19 @@ def test_as_stg(stg_table: str):
 
     # index MUSÍ být v definici
     assert "PRIMARY INDEX" in result
+
+    # primární klíč musí být správně označený
+    pk_cols = []
+    for line in result.splitlines():
+        if line.startswith("--+ +column.") and ".primary" in line:
+            pk_cols.append(line)
+    # with open(r"c:\temp\result.txt", "w", encoding="utf8") as h:
+    #     h.write(result)
+    assert len(pk_cols) == 2
+
+
+def test_get_list_of_columns():
+    input = "a,b,c,d"
+    iindex = f"PRIMARY INDEX({input})"
+    output = pt._get_list_of_columns(iindex)
+    assert output == input.split(",")
