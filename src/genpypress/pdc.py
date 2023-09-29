@@ -30,6 +30,24 @@ def _get_parent_directories(path: _p.Path) -> list[_p.Path]:
 
 
 def _locate_client() -> _p.Path | None:
+    """Returns a directory where Oracle client is installed.
+    - if ORACLE_HOME env variable is defined, return it as the path
+    - otherwise, try to locate the client by looking up one of:
+        - oci.dll, sqlplus.exe, oci.msg, libocci.so.12.2
+    - try these directories:
+        - parent of TNS_ADMIN dir, if the env variable is defined
+        - directories on PATH
+
+    Returns:
+        _p.Path | None: path to the client
+    """
+    try:
+        pth = _os.environ["ORACLE_HOME"]
+        pth = _p.Path(pth)
+        return pth
+    except KeyError:
+        pass
+
     dirs_to_try: list[_p.Path] = []
     files_to_try = ["oci.dll", "sqlplus.exe", "oci.msg", "libocci.so.12.2"]
     try:
@@ -83,7 +101,9 @@ _OraSession = _namedtuple("_OraSession", "session,cursor")
 
 
 @_contextmanager
-def _connection(dsn: str, user: str, password: str, commit: bool = False) -> _OraSession:
+def _connection(
+    dsn: str, user: str, password: str, commit: bool = False
+) -> _OraSession:
     with _ora.connect(user=user, password=password, dsn=dsn) as sess:
         with sess.cursor() as cur:
             if commit:
@@ -165,7 +185,9 @@ def deploy(
     for f in files:
         content = f.read_text(encoding=encoding, errors="strict")
         _s = [stmt.strip() for stmt in content.split(";") if stmt.strip() != "commit"]
-        _s = [_Statement(source=f, sql=sql) for sql in _s if sql.replace("\n", "") != ""]
+        _s = [
+            _Statement(source=f, sql=sql) for sql in _s if sql.replace("\n", "") != ""
+        ]
         statements.extend(_s)
 
     print(f"deploy to: {dsn=}, {user=}")

@@ -51,7 +51,9 @@ def _config_from_str(content: str) -> list[Rewrite] | None:
 
 def create_sample_config(config_file: pathlib.Path):
     if config_file.exists():
-        raise exceptions.ConfigError(f"can not create sample config, path exists: {config_file}")
+        raise exceptions.ConfigError(
+            f"can not create sample config, path exists: {config_file}"
+        )
     sample = textwrap.dedent(
         r"""
         # Toto je vzorový konfiguační soubor pro aplikaci ph rewrite
@@ -59,41 +61,39 @@ def create_sample_config(config_file: pathlib.Path):
         # konfigurace je vlastně seznamem pravidel
         [
             { 
-                # where: udává, jaké soubory se přepisují
-                #        název souboru se převede na lowercase, znormalizují se 
-                #        zpětná lomítka (na lomítka) - a pokud název souboru OBSAHUJE
-                #        text uvedený ve where, v souboru se provedou replacementy
-                "where": "ppfb_cust_dn1/trf/dm01_ppfb_cust_dn1.sql",
-                
-                # rules: seznam pravidel
-                #        každé pravidlo obsahuje "starou" hodnotu a "novou" hodnotu
-                #        v souboru se provádí jednoduchá substituce, tj replacement
-                #        je CASE SENSITIVE! Nepodporují se regulární výrazy.
+                # projdi adresář kde jsou EP_STG_V_LOAD views
+                # všechny reference na AP_STG nahraď za AD0_STG
+                "where": "41-initial-views-ASG",
                 "rules": [
                     { 
-                        "old_val" : "%AP_STG_V_LOAD_DB%.MDS_PPFB_WHITELIST",
-                        "new_val" : "%AP_STG_V_LOAD_DB-DEV%.MDS_PPFB_WHITELIST"
-                    },
-                    {
-                        "old_val" : "CT_DN1.product_code in",
-                        "new_val" : "CT_DN1.product_code like any"
-                    },
-                    {
-                        "old_val" : "'PRODC_TS_TARIFF_BUNDLE_O2_ZUSAMMEN_PPF_1'",
-                        "new_val" : "'%PRODC_TS_TARIFF_BUNDLE_OPTIC_INT_HD_250_O2TV%'"
+                        "old_val" : "FROM AP_STG.",
+                        "new_val" : "FROM AD0_STG."
                     }
                 ]
             },
             { 
-                "where": "ppfb_cust_dn1/trf/another_file.sql",
+                # access views, bez ohledu na databázi
+                "where": "35-accs-views",
                 "rules": [
                     { 
-                        "old_val" : "old",
-                        "new_val" : "new"
-                    }                    
+                        "old_val" : "FROM AP_STG.",
+                        "new_val" : "FROM AD0_STG."
+                    }                               
+                ]
+            },
+            { 
+                # V_SPEC pro engine 0
+                "where": "00-copy-souce-ddl/EP_STG_V_SPEC",
+                "rules": [
+                    { 
+                        "old_val" : "FROM AP_STG.",
+                        "new_val" : "FROM AD0_STG."
+                    }                               
                 ]
             }
+            
         ]
+
     """
     )
     config_file.write_text(sample, encoding="utf-8", errors="strict")
@@ -111,7 +111,9 @@ def read_config(config: pathlib.Path | str, encoding: str = "utf-8") -> list[Rew
     if not isinstance(content, str):
         raise exceptions.ConfigInvalidContentError("expected to get a string value")
     if not len(content) > 0:
-        raise exceptions.ConfigInvalidContentError(f"expected to get a non zero length string {len(content)=}")
+        raise exceptions.ConfigInvalidContentError(
+            f"expected to get a non zero length string {len(content)=}"
+        )
 
     return _config_from_str(content)
 
@@ -129,7 +131,9 @@ def rewrite_in_dir(config: list[Rule], directory: pathlib.Path, max_files: int):
                 files.append(_MatchedFile(path=f, rule=rule))
 
     if len(files) > max_files:
-        raise exceptions.LimitError(f"příliš mnoho kandidátů: {max_files=}, {len(files)=}")
+        raise exceptions.LimitError(
+            f"příliš mnoho kandidátů: {max_files=}, {len(files)=}"
+        )
 
     logger.info(f"{len(files)=}")
     for mtch in files:
