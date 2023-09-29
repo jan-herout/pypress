@@ -1,4 +1,5 @@
 import subprocess
+from importlib import metadata as _metadata
 from pathlib import Path as _Path
 
 import fire as _fire
@@ -15,7 +16,17 @@ traceback.install(show_locals=False, max_frames=1)
 _cwd = str(_Path.cwd())
 
 
-def rewrite(directory: str = ".", config_file_name: str = "rewrite.json", max_files=20, run_press=False):
+def version():
+    vrs = _metadata.version("genpypress")
+    print(f"genpypress version: {vrs}")
+
+
+def rewrite(
+    directory: str = ".",
+    config_file_name: str = "rewrite.json",
+    max_files=20,
+    run_press=False,
+):
     """
     Umožní přepis souborů na základě konfigurace (rewrite.json).
     Pokud ještě konfigurační soubor neexistuje, založí ho.
@@ -58,7 +69,12 @@ def join(
 ):
     """sloučí sadu SQL souborů do jednoho, a smaže je"""
     _app_join.join_files(
-        directory=directory, join_to=join_to, delete=delete, mask=mask, encoding=encoding, add_comment=add_comment
+        directory=directory,
+        join_to=join_to,
+        delete=delete,
+        mask=mask,
+        encoding=encoding,
+        add_comment=add_comment,
     )
     print("done")
 
@@ -93,7 +109,9 @@ def cc(
         input_encoding (str): Defaults to "utf-8".
         output_encoding (str): Defaults to "utf-8".
     """
-    _app_cc.conditional_create(directory, scenario, input_encoding, output_encoding, max_files)
+    _app_cc.conditional_create(
+        directory, scenario, input_encoding, output_encoding, max_files
+    )
 
 
 def ddl_to_async(
