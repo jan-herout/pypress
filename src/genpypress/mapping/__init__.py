@@ -221,12 +221,17 @@ def from_markdown(text: str, filter=filter_keep_code) -> Mapping:
             match property:
                 case "MAPPED_TO":
                     colmap.mapped_to = stored_value
-                case ("TO2_PDM_EDW.ETL_TRANSFORMATION_RULE" | "TO2_PDM_EDW.ETL_TRANSFORMATION_RULES"):
+                case (
+                    "TO2_PDM_EDW.ETL_TRANSFORMATION_RULE"
+                    | "TO2_PDM_EDW.ETL_TRANSFORMATION_RULES"
+                ):
                     colmap.transformation_rule = stored_value
                 case "COMMENT":
                     colmap.comment = stored_value
                 case _:
-                    raise ParsingError(f"unknown property for column mapping {colmap.column}: {property}")
+                    raise ParsingError(
+                        f"unknown property for column mapping {colmap.column}: {property}"
+                    )
 
             line_buffer = []
             continue

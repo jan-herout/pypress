@@ -7,12 +7,14 @@ for k in ("HTTP_PROXY", "HTTPS_PROXY"):
         del os.environ[k]
     except KeyError:
         pass
-gl = gitlab.Gitlab('https://git-it.cz.o2', private_token='glpat-KMWDJaomuu7MYv_unXj2', ssl_verify=False)
+gl = gitlab.Gitlab(
+    "https://git-it.cz.o2", private_token="glpat-KMWDJaomuu7MYv_unXj2", ssl_verify=False
+)
 _projects = gl.projects.list()
 bimain = None
-for p in _projects:    
-    if p.name.lower()=="bimain":
-        bimain=p
+for p in _projects:
+    if p.name.lower() == "bimain":
+        bimain = p
 
 assert bimain
 print(bimain)
@@ -23,4 +25,4 @@ for m in gl.mergerequests.list():
         # print(m)
         print(f"{m.title=} {m.author=} {m.references=}")
         print("-" * 80)
-        # title, 
+        # title,

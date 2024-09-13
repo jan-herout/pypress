@@ -2,30 +2,43 @@ import subprocess
 from importlib import metadata as _metadata
 from pathlib import Path as _Path
 
-import fire as _fire
 from rich import traceback
+from typer import Typer
 
 from genpypress import app_cc as _app_cc
 from genpypress import app_join as _app_join
 from genpypress import app_patch_to_validtime as _app_patch_to_validtime
 from genpypress import app_rewrite as _app_rewrite
 from genpypress import app_to_async as _app_to_async
+from genpypress.app_deploy import deploy as _app_bh
 
 traceback.install(show_locals=False, max_frames=1)
 
 _cwd = str(_Path.cwd())
 
+app = Typer()
 
+
+@app.command()
 def version():
     vrs = _metadata.version("genpypress")
     print(f"genpypress version: {vrs}")
 
 
+@app.command()
+def deploy(
+    path: str = ".",
+    to_prod: bool = False,
+):
+    _app_bh._scandir(_Path(path), to_prod=to_prod)
+
+
+@app.command()
 def rewrite(
     directory: str = ".",
     config_file_name: str = "rewrite.json",
-    max_files=20,
-    run_press=False,
+    max_files: int = 20,
+    run_press: bool = False,
 ):
     """
     Umožní přepis souborů na základě konfigurace (rewrite.json).
@@ -34,6 +47,8 @@ def rewrite(
     Args:
         directory (str): _description_
     """
+    if run_press:
+        raise Exception
     directory = _Path(directory)
     print(f"rewrite in: {directory=}")
     config_file = directory / config_file_name
@@ -59,6 +74,7 @@ def rewrite(
     _app_rewrite.rewrite_in_dir(config, directory, max_files)
 
 
+@app.command()
 def join(
     directory: str,
     join_to: str = "part_1.sql",
@@ -79,6 +95,7 @@ def join(
     print("done")
 
 
+@app.command()
 def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
     """apatch: patch TPT skriptů pro async stage
 
@@ -94,6 +111,7 @@ def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
     _app_patch_to_validtime.async_patch(d, limit, encoding)
 
 
+@app.command()
 def cc(
     directory: str,
     scenario: str = "drop",
@@ -114,6 +132,7 @@ def cc(
     )
 
 
+@app.command()
 def ddl_to_async(
     folder: str,
     max_files: int = 20,
@@ -136,9 +155,9 @@ def ddl_to_async(
     )
 
 
-def _main():
-    _fire.Fire()
+def main():
+    app()
 
 
 if __name__ == "__main__":
-    _main()
+    main

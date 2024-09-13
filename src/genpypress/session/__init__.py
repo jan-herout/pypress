@@ -62,5 +62,7 @@ def connect_teradata(
         )
     if password is None:
         raise ParameterError("password: should not be None")
-    with teradatasql.connect(host=hostname, user=username, password=password, logmech=logmech) as session:
+    with teradatasql.connect(
+        host=hostname, user=username, password=password, logmech=logmech
+    ) as session:
         yield session

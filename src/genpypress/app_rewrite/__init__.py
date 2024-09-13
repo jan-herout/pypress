@@ -25,10 +25,10 @@ class Rule:
     rules: list[Rewrite]
 
     def satisfies_path(self, file: pathlib.Path) -> bool:
-        where = _to_norm_str(self.where)
-        file = _to_norm_str(file)
-        retval = where in file
-        logger.debug(f"{retval=}, {where=}, {file=}")
+        _where = _to_norm_str(self.where)
+        _file = _to_norm_str(file)
+        retval = _where in _file
+        logger.debug(f"{retval=}, {_where=}, {_file=}")
         return retval
 
 
@@ -38,7 +38,7 @@ class _MatchedFile:
     rule: Rule
 
 
-def _config_from_str(content: str) -> list[Rewrite] | None:
+def _config_from_str(content: str) -> list[Rule]:
     lines = [line for line in content.split("\n") if not _is_comment(line)]
     filtered_content = "\n".join(lines)
     try:
@@ -166,7 +166,7 @@ def _is_comment(line: str) -> bool:
     return False
 
 
-def _to_norm_str(path: pathlib.Path) -> str:
+def _to_norm_str(path: pathlib.Path | str) -> str:
     if isinstance(path, pathlib.Path):
         path = str(path.absolute())
     path = path.lower()
