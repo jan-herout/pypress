@@ -1,6 +1,6 @@
+import re
 from collections import namedtuple
 from pathlib import Path
-import re
 
 LastStatementLine = namedtuple("LastStatementLine", "line_no,offset")
 _UTF8 = "UTF-8"

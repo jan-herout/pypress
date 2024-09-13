@@ -5,6 +5,7 @@ from pathlib import Path
 
 import cattr
 from attrs import define, field
+from loguru import logger
 
 __SUPPORTED_PLATFORMS__ = ["win32"]
 
@@ -56,7 +57,7 @@ class Table:
     name: str = field(default="")
     comment: str = field(default="")
     set_or_multiset: str = field(default="")
-    columns: list[Column] = field(default="")
+    columns: list[Column] = field(factory=list)
     pi_name: str = field(default=None)
     pi_is_upi: bool = field(default=False)
     pi_columns: list[str] = field(default=list())
@@ -175,13 +176,11 @@ def from_file(filename: str | Path, timeout_seconds=2) -> list[Table] | Table:
             jsonizer, stderr=subprocess.STDOUT, timeout=timeout_seconds
         )
     except subprocess.TimeoutExpired:
-        raise subprocess.TimeoutExpired(
-            f"timeout: {_table2json.name} did not finish in under {timeout_seconds} seconds: check the file {filename}"
-        )
+        logger.error(f"{_table2json}: timeout, neskončil včas, chyba?")
+        raise
     except subprocess.CalledProcessError:
-        raise subprocess.CalledProcessError(
-            f"error: {_table2json.name} returned error, check the file {filename}"
-        )
+        logger.error(f"{_table2json}: skončil s chybou")
+        raise
 
     # get the json
     output_string = output_bytes.decode("utf-8")

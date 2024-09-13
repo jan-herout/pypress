@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-import pathlib
-import shutil
-import os
-import re
-from textwrap import dedent
-from loguru import logger
 import argparse
+import os
+import pathlib
+import re
+import shutil
+from textwrap import dedent
+
+from loguru import logger
 
 DEPLOYDIR = "_deployment"
 
@@ -126,7 +127,9 @@ def _make_step(
     commands = []
 
     files = sorted(
-        [f for f in step_dir.glob("*.*") if f.suffix.lower() in (".sql", ".bteq")]  # noqa: E501
+        [
+            f for f in step_dir.glob("*.*") if f.suffix.lower() in (".sql", ".bteq")
+        ]  # noqa: E501
     )
     for f in files:
         rp = f.relative_to(step_dir)
@@ -137,10 +140,14 @@ def _make_step(
         commands.append("")
 
         commands.append(f"database {replace_database(db)};")
-        files = [f for f in dbdir.rglob("*.*") if f.suffix.lower() in (".sql", ".bteq")]  # noqa: E501
+        files = [
+            f for f in dbdir.rglob("*.*") if f.suffix.lower() in (".sql", ".bteq")
+        ]  # noqa: E501
         for f in files:
             rp = f.relative_to(step_dir)
-            commands.append(f".run file='../{tera_dir_name}/{step_dir.name}/{str(rp)}'")  # noqa: E501
+            commands.append(
+                f".run file='../{tera_dir_name}/{step_dir.name}/{str(rp)}'"
+            )  # noqa: E501
 
     commands.insert(0, BTEQ_HEADER)
     bteq_content = "\n".join(commands)

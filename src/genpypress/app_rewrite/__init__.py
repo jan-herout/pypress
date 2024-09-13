@@ -21,6 +21,12 @@ class Rewrite:
 
 @define
 class Rule:
+    """
+    Atributy:
+        where: str - na co se má pravidlo naaplikovat
+        runes: list[Rewrite] - seznam pravidel pro přepis
+    """
+
     where: str
     rules: list[Rewrite]
 
@@ -39,6 +45,9 @@ class _MatchedFile:
 
 
 def _config_from_str(content: str) -> list[Rule]:
+    """
+    Vrací konfiguraci jako seznam pravidel (Rule).
+    """
     lines = [line for line in content.split("\n") if not _is_comment(line)]
     filtered_content = "\n".join(lines)
     try:
@@ -99,7 +108,7 @@ def create_sample_config(config_file: pathlib.Path):
     config_file.write_text(sample, encoding="utf-8", errors="strict")
 
 
-def read_config(config: pathlib.Path | str, encoding: str = "utf-8") -> list[Rewrite]:
+def read_config(config: pathlib.Path | str, encoding: str = "utf-8") -> list[Rule]:
     # pokud jde o instanci pathlib.Path, pokus se načíst soubor, nebo vrať None
     if isinstance(config, pathlib.Path):
         if not config.is_file():
@@ -142,7 +151,7 @@ def rewrite_in_dir(config: list[Rule], directory: pathlib.Path, max_files: int):
 
 def rewrite_file(mtch: _MatchedFile, encoding: str = "utf-8"):
     old_content = mtch.path.read_text(encoding=encoding, errors="strict")
-    new_content = rewrite_text(old_content, mtch.rule.rules, encoding)
+    new_content = rewrite_text(old_content, mtch.rule.rules)
     if old_content == new_content:
         logger.warning(f"no change for: {mtch.path}")
         return
@@ -150,7 +159,7 @@ def rewrite_file(mtch: _MatchedFile, encoding: str = "utf-8"):
     mtch.path.write_text(new_content, encoding=encoding, errors="strict")
 
 
-def rewrite_text(old_content: str, rules: list[Rule], encoding: str = "utf-8"):
+def rewrite_text(old_content: str, rules: list[Rewrite]):
     new_content = old_content
     for r in rules:
         new_content = new_content.replace(r.old_val, r.new_val)

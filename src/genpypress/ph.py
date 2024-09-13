@@ -1,6 +1,6 @@
 import subprocess
 from importlib import metadata as _metadata
-from pathlib import Path as _Path
+from pathlib import Path
 
 from rich import traceback
 from typer import Typer
@@ -13,8 +13,6 @@ from genpypress import app_to_async as _app_to_async
 from genpypress.app_deploy import deploy as _app_bh
 
 traceback.install(show_locals=False, max_frames=1)
-
-_cwd = str(_Path.cwd())
 
 app = Typer()
 
@@ -30,7 +28,7 @@ def deploy(
     path: str = ".",
     to_prod: bool = False,
 ):
-    _app_bh._scandir(_Path(path), to_prod=to_prod)
+    _app_bh._scandir(Path(path), to_prod=to_prod)
 
 
 @app.command()
@@ -49,9 +47,9 @@ def rewrite(
     """
     if run_press:
         raise Exception
-    directory = _Path(directory)
+    _directory = Path(directory)
     print(f"rewrite in: {directory=}")
-    config_file = directory / config_file_name
+    config_file = _directory / config_file_name
     print(f"{config_file=}")
     try:
         config = _app_rewrite.read_config(config_file)
@@ -64,14 +62,14 @@ def rewrite(
     except Exception:  # chyba o které nic nevím
         raise
 
-    project_json = directory / "project.json"
+    project_json = _directory / "project.json"
     if run_press and project_json.is_file():
         print("press run")
         subprocess.run(["press", "run"])
 
     # proveď přepis
     print("rewrite")
-    _app_rewrite.rewrite_in_dir(config, directory, max_files)
+    _app_rewrite.rewrite_in_dir(config, _directory, max_files)
 
 
 @app.command()
@@ -104,7 +102,7 @@ def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
         limit (int): kolik maximálně souborů upravit
         encoding (str): jak jsou soubory nakódované
     """
-    d = _Path(directory)
+    d = Path(directory)
     if not d.is_dir():
         print(f"toto není adresář: {directory}")
         exit(1)
@@ -160,4 +158,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main
+    main()

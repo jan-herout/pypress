@@ -1,6 +1,7 @@
 import re
-from typing import Optional
 from collections import namedtuple
+from typing import Optional
+
 from attrs import define, field
 
 BACKTICKS = "```"
@@ -142,7 +143,7 @@ def _is_in_square_brackets(line: str) -> Optional[KeyAndVal]:
     return _is_key_val_property(line, throws_on_fail=True)
 
 
-def from_markdown(text: str, filter=filter_keep_code) -> Mapping:
+def from_markdown(text: str) -> Mapping:
     """
     Parses a markdown file and returns mapping.
 
@@ -214,7 +215,7 @@ def from_markdown(text: str, filter=filter_keep_code) -> Mapping:
         if len(line_buffer) > 0:
             stored_value = "\n".join(line_buffer)
         else:
-            stored_value = kv.val.lstrip()
+            stored_value = kv.val.lstrip()  # pyright: ignore
 
         # if column_mapping exists, we are modifying the column mapping
         if colmap and colmap.column != "":
