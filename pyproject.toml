@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "genpypress"
-version = "0.1.42"
+version = "0.1.46"
 description = "Set of tools and utilities connected with press code generator."
 authors = ["Jan Herout <jan.herout@gmail.com>"]
 license = "MIT"
@@ -34,14 +34,14 @@ ph = 'genpypress.ph:main'
 
 
 [tool.poetry.dependencies]
-python = "^3.10, <3.13"
+python = "^3.10"
 attrs = "^22.2.0"
 cattrs = "^22.2.0"
-teradatasql = "^17.20.0.19"
 rich = "^13.3.3"
 #python-gitlab = "^3.14.0"
 typer = {extras = ["rich"], version = "^0.12.5"}
 loguru = "^0.7.2"
+teradatasql = "^20.0.0.16"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"

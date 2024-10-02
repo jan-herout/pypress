@@ -6,7 +6,7 @@ import textwrap
 import cattr
 from attr import define
 
-from genpypress.app_rewrite import exceptions
+from genpypress.app.app_rewrite import exceptions
 
 logger = logging.getLogger()
 
@@ -69,40 +69,38 @@ def create_sample_config(config_file: pathlib.Path):
         # řádky uvozené mřížkou jsou komentáře, nejsou součástí konfigurace
         # konfigurace je vlastně seznamem pravidel
         [
-            { 
+            {
                 # projdi adresář kde jsou EP_STG_V_LOAD views
                 # všechny reference na AP_STG nahraď za AD0_STG
                 "where": "41-initial-views-ASG",
                 "rules": [
-                    { 
+                    {
                         "old_val" : "FROM AP_STG.",
                         "new_val" : "FROM AD0_STG."
                     }
                 ]
             },
-            { 
+            {
                 # access views, bez ohledu na databázi
                 "where": "35-accs-views",
                 "rules": [
-                    { 
+                    {
                         "old_val" : "FROM AP_STG.",
                         "new_val" : "FROM AD0_STG."
-                    }                               
+                    }
                 ]
             },
-            { 
+            {
                 # V_SPEC pro engine 0
                 "where": "00-copy-souce-ddl/EP_STG_V_SPEC",
                 "rules": [
-                    { 
+                    {
                         "old_val" : "FROM AP_STG.",
                         "new_val" : "FROM AD0_STG."
-                    }                               
+                    }
                 ]
             }
-            
         ]
-
     """
     )
     config_file.write_text(sample, encoding="utf-8", errors="strict")

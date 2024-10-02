@@ -1,17 +1,17 @@
-#!/usr/bin/env python3
-
-import argparse
 import os
 import pathlib
 import re
 import shutil
 from textwrap import dedent
 
+from attrs import define
 from loguru import logger
 
 DEPLOYDIR = "_deployment"
-
+UTF8 = "utf-8"
 HOME_DIR = pathlib.Path.home()
+RUN = "run"
+COMPILE = "compile"
 
 BTEQ_HEADER = f"""
 -----------------------------------------------------------
@@ -64,7 +64,22 @@ def _get_dir(path: pathlib.Path) -> pathlib.Path:
     raise ValueError(f"dir does not exist: {path}")
 
 
-def _scandir(p: pathlib.Path, to_prod: bool):
+def compile_rewrites(rules: list[str] | None) -> dict[str, str]:
+    replacements = {}
+    if not rules:
+        return replacements
+    for rule in rules:
+        logger.debug(f"{rule=}")
+        rule_from, rule_to = rule.split("/")
+        replacements[rule_from] = rule_to
+    return replacements
+
+
+def scandir(
+    p: pathlib.Path,
+    *,
+    rewrites: list[str] | None,
+):
     pack_dir = _get_dir(p / "db")
     tera_dir = _get_dir(pack_dir / "teradata")
     logger.info(f"{pack_dir=}")
@@ -85,15 +100,11 @@ def _scandir(p: pathlib.Path, to_prod: bool):
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # produkce nebo dev?
-    replacements = {}
-    if not to_prod:
-        replacements = {
-            "^ap_(.*)": r"ad0_\1",
-            "^ep_(.*)": r"ed0_\1",
-        }
-
+    replacements = compile_rewrites(rewrites)
+    logger.info(replacements)
     commands = []
     for step in step_directories:
+        logger.info(f"step={step.name}")
         _make_step(pack_dir, step, tera_dir.name, replacements)
         commands.append(_get_bash_cmd(step))
 
@@ -101,6 +112,29 @@ def _scandir(p: pathlib.Path, to_prod: bool):
     sh = deploy_dir / "runme.sh"
     sh.write_text(shc, encoding="utf-8")
     _make_executable(sh)
+
+
+@define
+class _Content:
+    encoding: str
+    content: str
+
+
+def _read_file(f: pathlib.Path) -> _Content:
+    for enc in (UTF8, "windows-1250", "utf-16-le", "utf-16-be"):
+        try:
+            c = _Content(content=f.read_text(encoding=enc), encoding=enc)
+            return c
+        except UnicodeError:
+            pass
+    raise ValueError(f"can not read: {f}")
+
+
+def _run_or_compile(script: str, f: pathlib.Path) -> str:
+    if re.search(r"(REPLACE|CREATE)\s+PROCEDURE", script, re.I):
+        logger.warning(f"compile: {f}")
+        return COMPILE
+    return RUN
 
 
 def _make_step(
@@ -133,7 +167,16 @@ def _make_step(
     )
     for f in files:
         rp = f.relative_to(step_dir)
-        commands.append(f".run file='../{step_dir.name}/{str(rp)}'")
+
+        # normalizuj kódování
+        content = _read_file(f)
+        if content.encoding != UTF8:
+            logger.warning(f"rewrite to {UTF8}: {f}")
+            f.write_text(content.content, encoding=UTF8)
+
+        # sestav bteq call
+        run_cmd = _run_or_compile(content.content, f)
+        commands.append(f".{run_cmd} file='../{step_dir.name}/{str(rp)}'")
 
     for db in databases:
         dbdir = step_dir / db
@@ -144,9 +187,20 @@ def _make_step(
             f for f in dbdir.rglob("*.*") if f.suffix.lower() in (".sql", ".bteq")
         ]  # noqa: E501
         for f in files:
+            # normalizuj kódování
+            content = _read_file(f)
+            if content.encoding != UTF8:
+                logger.warning(f"rewrite to {UTF8}: {f}")
+                f.write_text(content.content, encoding=UTF8)
+
+            # sestav bteq call
+            rp = f.relative_to(step_dir)
+            run_cmd = _run_or_compile(content.content, f)
+            commands.append(f".{run_cmd} file='../{step_dir.name}/{str(rp)}'")
+
             rp = f.relative_to(step_dir)
             commands.append(
-                f".run file='../{tera_dir_name}/{step_dir.name}/{str(rp)}'"
+                f".{run_cmd} file='../{tera_dir_name}/{step_dir.name}/{str(rp)}'"
             )  # noqa: E501
 
     commands.insert(0, BTEQ_HEADER)
@@ -154,13 +208,3 @@ def _make_step(
 
     fbtq = pack_dir / DEPLOYDIR / f"{step_dir.name}.bteq"
     fbtq.write_text(bteq_content, encoding="utf-8")
-
-
-def deploy():
-    ap = argparse.ArgumentParser(
-        prog="bi",
-        description="bihelp deploy",
-    )
-    ap.add_argument("--prod", default=False, action="store_true")
-    args = ap.parse_args()
-    _scandir(pathlib.Path.cwd(), to_prod=args.prod)

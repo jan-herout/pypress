@@ -2,19 +2,78 @@ import subprocess
 from importlib import metadata as _metadata
 from pathlib import Path
 
+from loguru import logger
 from rich import traceback
-from typer import Typer
+from typer import Argument, Typer
+from typing_extensions import Annotated
 
-from genpypress import app_cc as _app_cc
-from genpypress import app_join as _app_join
-from genpypress import app_patch_to_validtime as _app_patch_to_validtime
-from genpypress import app_rewrite as _app_rewrite
-from genpypress import app_to_async as _app_to_async
-from genpypress.app_deploy import deploy as _app_bh
+from genpypress.app import (
+    app_cc,
+    app_join,
+    app_patch_to_validtime,
+    app_rewrite,
+    app_to_async,
+)
+from genpypress.app.app_deploy import app_deploy
+from genpypress.app.app_transfer.transfer import (
+    get_transfer_objects,
+    load_transfer_objects,
+    transfer_objects,
+)
 
 traceback.install(show_locals=False, max_frames=1)
 
-app = Typer()
+app = Typer(no_args_is_help=True, rich_markup_mode="rich")
+
+
+@app.command()
+def transfer_prep(
+    db_from: str,
+    db_to: str,
+    *,
+    batch_file: str | None = None,
+):
+    """
+    Připraví soubor s podklady pro přenos mezi databázemi.
+
+    Args:
+        - db_from (str): zdrojová databáze
+        - db_to (str): cílová databáze
+        - --batch_file: soubor do kterého zapíšeme získané DDL skripty (optional)
+    """
+    _batch_file = f"{db_to.upper()}.json" if not batch_file else batch_file
+    get_transfer_objects(db_from, db_to, store_to=_batch_file)
+
+
+@app.command()
+def transfer_run(
+    batch_file: Annotated[
+        str,
+        Argument(help="Název souboru připraveného pomocí transfer-prep."),
+    ],
+    *,
+    rewrites: None | list[str] = None,
+    filter: list[str] | None = None,
+):
+    """
+    Provede přenos mezi databázemi, podle souboru definovaného pomocí transfer-prep.
+
+    Args:
+    - batch_file (str): název souboru, který byl připraven pomocí transfer-prep
+    - rewrites (list[str] | None): seznam regulárních výrazů pro přepis DDL
+        - syntax: SEARCH/REPLACE/i - kde /i je optional suffix pro "ignorecase"
+        - příklad: EP_TGT[.]/ED0_TGT/i - přepíše v DDL z produkce na DEV
+    - filter (list[str] | None): seznam regulárních výrazů s filtrem
+
+    Příklad použití:
+
+    ph transfer-run ep_tgt_v.json --rewrites EP_TGT[.]/ED0_TGT --filter "PARTY.*"
+    """
+
+    if rewrites:
+        logger.info(rewrites)
+    batch = load_transfer_objects(Path(batch_file))
+    transfer_objects(batch, rewrites=rewrites, store_to=batch_file, filter=filter)
 
 
 @app.command()
@@ -26,9 +85,17 @@ def version():
 @app.command()
 def deploy(
     path: str = ".",
-    to_prod: bool = False,
+    *,
+    rewrites: list[str] | None = None,
+    preprod: bool = False,
 ):
-    _app_bh._scandir(Path(path), to_prod=to_prod)
+    """Připraví nasazovací obálku v podobě shell skriptů (linux, náhrada za bihelp)."""
+    if not rewrites:
+        if preprod:
+            rewrites = ["EP_/ER0_", "AP_/AR0_"]
+        else:
+            rewrites = ["EP_/ED0_", "AP_/AD0_"]
+    app_deploy.scandir(Path(path), rewrites=rewrites)
 
 
 @app.command()
@@ -52,12 +119,12 @@ def rewrite(
     config_file = _directory / config_file_name
     print(f"{config_file=}")
     try:
-        config = _app_rewrite.read_config(config_file)
-    except _app_rewrite.exceptions.ConfigEmptyContent as err:
+        config = app_rewrite.read_config(config_file)
+    except app_rewrite.exceptions.ConfigEmptyContent as err:
         # OK, chybějící config file
         print(err)
         print(f"vytvářím vzorovový soubor: {config_file}")
-        _app_rewrite.create_sample_config(config_file)
+        app_rewrite.create_sample_config(config_file)
         return
     except Exception:  # chyba o které nic nevím
         raise
@@ -69,7 +136,7 @@ def rewrite(
 
     # proveď přepis
     print("rewrite")
-    _app_rewrite.rewrite_in_dir(config, _directory, max_files)
+    app_rewrite.rewrite_in_dir(config, _directory, max_files)
 
 
 @app.command()
@@ -82,7 +149,7 @@ def join(
     add_comment: bool = True,
 ):
     """sloučí sadu SQL souborů do jednoho, a smaže je"""
-    _app_join.join_files(
+    app_join.join_files(
         directory=directory,
         join_to=join_to,
         delete=delete,
@@ -106,7 +173,7 @@ def apatch(directory: str, limit: int = 50, encoding: str = "utf-8"):
     if not d.is_dir():
         print(f"toto není adresář: {directory}")
         exit(1)
-    _app_patch_to_validtime.async_patch(d, limit, encoding)
+    app_patch_to_validtime.async_patch(d, limit, encoding)
 
 
 @app.command()
@@ -125,7 +192,7 @@ def cc(
         input_encoding (str): Defaults to "utf-8".
         output_encoding (str): Defaults to "utf-8".
     """
-    _app_cc.conditional_create(
+    app_cc.conditional_create(
         directory, scenario, input_encoding, output_encoding, max_files
     )
 
@@ -145,7 +212,7 @@ def ddl_to_async(
         encoding (str, optional): defaults to "utf-8".
         default_type (str, optional): if set, apply (s) or (i) to STG tables
     """
-    _app_to_async.to_async(
+    app_to_async.to_async(
         folder=folder,
         max_files=max_files,
         encoding=encoding,
