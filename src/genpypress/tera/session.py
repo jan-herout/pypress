@@ -36,10 +36,14 @@ def get_session() -> Generator[td.TeradataConnection, None, None]:
         Generator[td.TeradataConnection, None, None]: _description_
     """
     cf = get_conn_params()
-    with td.connect(**asdict(cf)) as con:
+    try:
         logger.debug(f"connect {cf.host}/{cf.user}: {cf.logmech}, {cf.tmode}")
-        yield con
-    logger.debug(f"disconnect {cf.host}/{cf.user}: {cf.logmech}, {cf.tmode}")
+        sess = td.connect(**asdict(cf))
+        yield sess
+    finally:
+        if sess:
+            logger.debug(f"disconnect {cf.host}/{cf.user}: {cf.logmech}, {cf.tmode}")
+            sess.close()
 
 
 @contextmanager
