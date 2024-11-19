@@ -3,13 +3,14 @@ from importlib import metadata as _metadata
 from pathlib import Path
 
 from loguru import logger
-from rich import traceback
+from rich import console, table, traceback
 from typer import Argument, Typer
 from typing_extensions import Annotated
 
 from genpypress.app import (
     app_cc,
     app_join,
+    app_logparser,
     app_patch_to_validtime,
     app_rewrite,
     app_to_async,
@@ -27,11 +28,29 @@ app = Typer(no_args_is_help=True, rich_markup_mode="rich")
 
 
 @app.command()
+def parse_logs(
+    directory: str,
+    *,
+    filter: str = "",
+    save_to: str = "",
+):
+    logger.info(f"parsing {directory}")
+    src_dir = Path(directory)
+    tgt_file = Path(f"{src_dir.name}.json") if not save_to else Path(save_to)
+
+    data = app_logparser.parse_dir(src_dir, filter=filter)
+    data_json = app_logparser.to_json(data)
+    logger.info(f"write to {tgt_file.as_posix()}")
+    tgt_file.write_text(data_json, encoding="utf-8")
+
+
+@app.command()
 def transfer_prep(
     db_from: str,
     db_to: str,
     *,
     batch_file: str | None = None,
+    filter: str | None = None,
 ):
     """
     Připraví soubor s podklady pro přenos mezi databázemi.
@@ -42,7 +61,7 @@ def transfer_prep(
         - --batch_file: soubor do kterého zapíšeme získané DDL skripty (optional)
     """
     _batch_file = f"{db_to.upper()}.json" if not batch_file else batch_file
-    get_transfer_objects(db_from, db_to, store_to=_batch_file)
+    get_transfer_objects(db_from, db_to, store_to=_batch_file, filter=filter)
 
 
 @app.command()
@@ -54,6 +73,8 @@ def transfer_run(
     *,
     rewrites: None | list[str] = None,
     filter: list[str] | None = None,
+    iterations: int = 3,
+    force: bool = False,
 ):
     """
     Provede přenos mezi databázemi, podle souboru definovaného pomocí transfer-prep.
@@ -72,8 +93,37 @@ def transfer_run(
 
     if rewrites:
         logger.info(rewrites)
+
+    # načti metadata, a pokud začínáš od nuly, zajisti to
     batch = load_transfer_objects(Path(batch_file))
-    transfer_objects(batch, rewrites=rewrites, store_to=batch_file, filter=filter)
+    if force:
+        logger.info("Start from scratch")
+        for b in batch.objects:
+            b.deployed = False
+
+    cnt_ok = len([b for b in batch.objects if b.deployed])
+    cnt_all = len(batch.objects)
+    if cnt_ok < cnt_all:
+        transfer_objects(
+            batch,
+            rewrites=rewrites,
+            store_to=batch_file,
+            filter=filter,
+            iterations=iterations,
+        )
+    else:
+        logger.info("skip")
+
+    # feedback
+    cnt_ok = len([b for b in batch.objects if b.deployed])
+    cnt_failed = len([b for b in batch.objects if not b.deployed])
+    _console = console.Console()
+    _table = table.Table(title="výsledek")
+    _table.add_column("status")
+    _table.add_column("počet")
+    _table.add_row("úspěch", str(cnt_ok))
+    _table.add_row("CHYBA", str(cnt_failed))
+    _console.print(_table)
 
 
 @app.command()
@@ -92,9 +142,9 @@ def deploy(
     """Připraví nasazovací obálku v podobě shell skriptů (linux, náhrada za bihelp)."""
     if not rewrites:
         if preprod:
-            rewrites = ["EP_/ER0_", "AP_/AR0_"]
+            rewrites = ["EP_/ER0_", "AP_/AR0_", "VP_/VR0_"]
         else:
-            rewrites = ["EP_/ED0_", "AP_/AD0_"]
+            rewrites = ["EP_/ED0_", "AP_/AD0_", "VP_/VD0_"]
     app_deploy.scandir(Path(path), rewrites=rewrites)
 
 

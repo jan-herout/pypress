@@ -74,10 +74,16 @@ def _transfer_objects(
             logger.debug(f"skip: {obj.source_name}")
             continue
 
+        # pokus se objekt založit, ale při první chybě to vzdej (nezkoušej další statements)
         for stmt in get_deploy_statements(obj, rules=rules):
             logger.info(stmt.sql)
             with sess.cursor() as cur:
-                cur.execute(stmt.sql, ignoreErrors=stmt.errors_ok)
+                try:
+                    cur.execute(stmt.sql, ignoreErrors=stmt.errors_ok)
+                except td.Error as err:
+                    msg = str(err).splitlines()[0]
+                    logger.error(msg)
+                    break
         if store_to:
             obj.deployed = True
             save_transfer_objects(_store_to, batch)
@@ -89,6 +95,7 @@ def transfer_objects(
     rewrites: None | list[str],
     store_to: str | Path | None = None,
     filter: None | list[str],
+    iterations: int = 3,
 ):
     _filter: list[re.Pattern] = []
     if filter:
@@ -100,14 +107,18 @@ def transfer_objects(
     rules = _compile_rules(rewrites)
     logger.debug(f"{rules=}")
 
+    # deployment zkusíme provést ve třech iteracích, protože nám nemusí v první iteraci projít nějaká views
     with get_session() as sess:
-        _transfer_objects(
-            sess,
-            batch,
-            rules=rules,
-            filter=_filter,
-            store_to=store_to,
-        )
+        for _ in range(iterations):
+            _transfer_objects(
+                sess,
+                batch,
+                rules=rules,
+                filter=_filter,
+                store_to=store_to,
+            )
+
+    # na závěr to chce nějaký report...
 
 
 def _compile_rules(rewrites: None | list[str]) -> list[_Rule]:
@@ -137,6 +148,7 @@ def get_transfer_objects(
     db_to: str,
     *,
     store_to: str | Path | None = None,
+    filter: str | None = None,
 ) -> TransferDatabase:
     """
     Funkce se připojí do Teradaty, a získá seznam objektů pro přenos do cílové databáze.
@@ -155,6 +167,7 @@ def get_transfer_objects(
             db_from=db_from,
             db_to=db_to,
             store_to=store_to,
+            filter=filter,
         )
 
 
@@ -176,11 +189,13 @@ def _get_transfer_objects(
     db_to: str,
     *,
     store_to: str | Path | None = None,
+    filter: str | None = None,
 ) -> TransferDatabase:
     if store_to and not isinstance(store_to, Path):
         store_to = Path(store_to)
 
     db_from, db_to = db_from.upper(), db_to.upper()
+    _fltr = f" and {filter}" if filter else ""
 
     _result = None
     if store_to:
@@ -198,7 +213,7 @@ def _get_transfer_objects(
             from dbc.tablesV
             where databaseName = '{db_from}'
             and substring(tableName from 1 for 1) <> '_'
-            and tableKind in ('V','T')
+            and tableKind in ('V','T') {_fltr}
             order by tableKind, tableName
             """
         )
@@ -288,6 +303,4 @@ def get_deploy_statements(
     # statistiky
     for stats in obj.source_stats.split(";"):
         statements.append(_Statement(sql=(_strip(stats) + ";")))
-    return statements
-    return statements
     return statements
