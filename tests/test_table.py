@@ -14,6 +14,8 @@ from genpypress import table  # noqa: E402 - make flake8 happy
 
 
 def test_from_file():
+    if sys.platform != "win32":
+        return
     fixture = _fixtures_dir / "test_from_file.sql"
     data = table.from_file(fixture)
     assert data

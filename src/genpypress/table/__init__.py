@@ -7,7 +7,7 @@ import cattr
 from attrs import define, field
 from loguru import logger
 
-__SUPPORTED_PLATFORMS__ = ["win32"]
+__SUPPORTED_PLATFORMS__ = ["win32", "linux"]
 
 assert sys.platform in __SUPPORTED_PLATFORMS__, f"unsupported platform: {sys.platform}"
 
