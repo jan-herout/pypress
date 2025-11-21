@@ -4,7 +4,7 @@ from pathlib import Path
 
 from loguru import logger
 from rich import console, table, traceback
-from typer import Argument, Typer
+from typer import Argument, Option, Typer
 from typing_extensions import Annotated
 
 from genpypress.app import (
@@ -70,11 +70,10 @@ def transfer_run(
         str,
         Argument(help="Název souboru připraveného pomocí transfer-prep."),
     ],
-    *,
-    rewrites: None | list[str] = None,
-    filter: list[str] | None = None,
-    iterations: int = 3,
-    force: bool = False,
+    rewrites: Annotated[list[str] | None, Option()] = None,
+    filter: Annotated[list[str] | None, Option()] = None,
+    iterations: Annotated[int, Option()] = 3,
+    force: Annotated[bool, Option()] = False,
 ):
     """
     Provede přenos mezi databázemi, podle souboru definovaného pomocí transfer-prep.
