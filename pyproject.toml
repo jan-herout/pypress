@@ -38,10 +38,10 @@ python = "^3.10"
 attrs = "^22.2.0"
 cattrs = "^22.2.0"
 rich = "^13.3.3"
-#python-gitlab = "^3.14.0"
 loguru = "^0.7.2"
 teradatasql = "^20.0.0.16"
 typer = "0.12.5"
+click = "8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
